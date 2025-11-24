@@ -1,0 +1,407 @@
+<!-- templates/forms/swineflu_form.html -->
+{% extends "base.html" %}
+
+{% block title %}Swine Flu (H1N1) Report Form - DODS{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem; color: #667eea;">🐷 Swine Flu (H1N1) Disease Report</h1>
+
+<div class="card">
+    <form id="swineForm">
+        <input type="hidden" name="disease_type" value="SwineFlu">
+        
+        <h3 style="color: #667eea; margin-bottom: 1rem;">Basic Information</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <div class="form-group">
+                <label for="diagnosis_date">Diagnosis Date *</label>
+                <input type="date" id="diagnosis_date" name="diagnosis_date" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="severity">Severity *</label>
+                <select id="severity" name="severity" required>
+                    <option value="">Select Severity</option>
+                    <option value="Mild">Mild (Flu-like symptoms)</option>
+                    <option value="Moderate">Moderate (High fever, respiratory distress)</option>
+                    <option value="Severe">Severe (Pneumonia, breathing difficulty)</option>
+                    <option value="Critical">Critical (ARDS, Multiple organ failure)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="status">Status *</label>
+                <select id="status" name="status" required>
+                    <option value="Active">Active</option>
+                    <option value="Recovered">Recovered</option>
+                    <option value="Deceased">Deceased</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="hospitalization">Hospitalization Status</label>
+                <select id="hospitalization" name="hospitalization">
+                    <option value="Not hospitalized">Not hospitalized</option>
+                    <option value="Hospitalized">Hospitalized (General Ward)</option>
+                    <option value="ICU">ICU Admission</option>
+                    <option value="Ventilator">Mechanical Ventilation</option>
+                </select>
+            </div>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 2rem 0 1rem;">Clinical Symptoms</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+            <label><input type="checkbox" name="symptom" value="fever"> High Fever (>100.4°F)</label>
+            <label><input type="checkbox" name="symptom" value="cough"> Cough (Dry/Productive)</label>
+            <label><input type="checkbox" name="symptom" value="sore_throat"> Sore Throat</label>
+            <label><input type="checkbox" name="symptom" value="runny_nose"> Runny/Stuffy Nose</label>
+            <label><input type="checkbox" name="symptom" value="body_ache"> Body Aches/Myalgia</label>
+            <label><input type="checkbox" name="symptom" value="headache"> Headache</label>
+            <label><input type="checkbox" name="symptom" value="chills"> Chills</label>
+            <label><input type="checkbox" name="symptom" value="fatigue"> Fatigue/Weakness</label>
+            <label><input type="checkbox" name="symptom" value="shortness_breath"> Shortness of Breath</label>
+            <label><input type="checkbox" name="symptom" value="chest_pain"> Chest Pain/Pressure</label>
+            <label><input type="checkbox" name="symptom" value="nausea"> Nausea</label>
+            <label><input type="checkbox" name="symptom" value="vomiting"> Vomiting</label>
+            <label><input type="checkbox" name="symptom" value="diarrhea"> Diarrhea</label>
+            <label><input type="checkbox" name="symptom" value="confusion"> Confusion/Altered Mental Status</label>
+            <label><input type="checkbox" name="symptom" value="seizures"> Seizures</label>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 2rem 0 1rem;">Symptom Onset & Duration</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <div class="form-group">
+                <label for="symptom_onset_date">Symptom Onset Date</label>
+                <input type="date" id="symptom_onset_date" name="symptom_onset_date">
+            </div>
+            
+            <div class="form-group">
+                <label for="fever_duration">Fever Duration (days)</label>
+                <input type="number" id="fever_duration" name="fever_duration" min="0" step="0.5">
+            </div>
+            
+            <div class="form-group">
+                <label for="max_temperature">Maximum Temperature (°F)</label>
+                <input type="number" id="max_temperature" name="max_temperature" step="0.1" placeholder="e.g., 103.5">
+            </div>
+            
+            <div class="form-group">
+                <label for="oxygen_saturation">Oxygen Saturation (SpO2)</label>
+                <input type="number" id="oxygen_saturation" name="oxygen_saturation" min="0" max="100" placeholder="e.g., 95">
+                <small>Normal: 95-100%</small>
+            </div>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 2rem 0 1rem;">Laboratory Tests</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <div class="form-group">
+                <label for="test_type">Influenza Test Type *</label>
+                <select id="test_type" name="test_type" required>
+                    <option value="">Select Test</option>
+                    <option value="RT-PCR">RT-PCR (Reverse Transcription PCR)</option>
+                    <option value="Rapid Influenza">Rapid Influenza Diagnostic Test (RIDT)</option>
+                    <option value="Viral Culture">Viral Culture</option>
+                    <option value="Immunofluorescence">Immunofluorescence</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="test_result">Test Result *</label>
+                <select id="test_result" name="test_result" required>
+                    <option value="">Select Result</option>
+                    <option value="Positive">Positive for H1N1</option>
+                    <option value="Positive - H3N2">Positive for H3N2</option>
+                    <option value="Positive - Influenza B">Positive for Influenza B</option>
+                    <option value="Negative">Negative</option>
+                    <option value="Indeterminate">Indeterminate</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="viral_load">Viral Load (if measured)</label>
+                <input type="text" id="viral_load" name="viral_load" placeholder="e.g., 1.5 x 10^6 copies/mL">
+            </div>
+            
+            <div class="form-group">
+                <label for="chest_xray">Chest X-Ray Finding</label>
+                <select id="chest_xray" name="chest_xray">
+                    <option value="Not done">Not done</option>
+                    <option value="Normal">Normal</option>
+                    <option value="Infiltrates">Infiltrates/Consolidation</option>
+                    <option value="Pneumonia">Pneumonia</option>
+                    <option value="ARDS">ARDS Pattern</option>
+                </select>
+            </div>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 2rem 0 1rem;">Risk Factors & Exposure</h3>
+        
+        <div class="form-group">
+            <label>High-Risk Groups</label>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                <label><input type="checkbox" name="risk_factor" value="pregnancy"> Pregnancy</label>
+                <label><input type="checkbox" name="risk_factor" value="age_under_5"> Age < 5 years</label>
+                <label><input type="checkbox" name="risk_factor" value="age_over_65"> Age > 65 years</label>
+                <label><input type="checkbox" name="risk_factor" value="asthma"> Asthma</label>
+                <label><input type="checkbox" name="risk_factor" value="copd"> COPD</label>
+                <label><input type="checkbox" name="risk_factor" value="diabetes"> Diabetes</label>
+                <label><input type="checkbox" name="risk_factor" value="heart_disease"> Heart Disease</label>
+                <label><input type="checkbox" name="risk_factor" value="kidney_disease"> Kidney Disease</label>
+                <label><input type="checkbox" name="risk_factor" value="liver_disease"> Liver Disease</label>
+                <label><input type="checkbox" name="risk_factor" value="obesity"> Obesity (BMI ≥40)</label>
+                <label><input type="checkbox" name="risk_factor" value="immunosuppressed"> Immunosuppressed</label>
+                <label><input type="checkbox" name="risk_factor" value="neurological"> Neurological Disorder</label>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="exposure_history">Exposure History (Last 14 days)</label>
+            <textarea id="exposure_history" name="exposure_history" rows="3" placeholder="Contact with confirmed cases, crowded places, recent travel, animal exposure (pigs), etc."></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="animal_contact">Contact with Pigs/Swine</label>
+            <select id="animal_contact" name="animal_contact">
+                <option value="No">No</option>
+                <option value="Yes - Direct">Yes - Direct contact</option>
+                <option value="Yes - Indirect">Yes - Indirect/nearby</option>
+                <option value="Yes - Occupational">Yes - Occupational (farm worker)</option>
+            </select>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 2rem 0 1rem;">Vaccination History</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <div class="form-group">
+                <label for="flu_vaccine_current">Current Season Flu Vaccine</label>
+                <select id="flu_vaccine_current" name="flu_vaccine_current">
+                    <option value="No">Not vaccinated</option>
+                    <option value="Yes">Vaccinated (current season)</option>
+                    <option value="Unknown">Unknown</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="vaccine_date">Vaccination Date (if vaccinated)</label>
+                <input type="date" id="vaccine_date" name="vaccine_date">
+            </div>
+            
+            <div class="form-group">
+                <label for="vaccine_type">Vaccine Type</label>
+                <select id="vaccine_type" name="vaccine_type">
+                    <option value="">Select if known</option>
+                    <option value="Trivalent">Trivalent (TIV)</option>
+                    <option value="Quadrivalent">Quadrivalent (QIV)</option>
+                    <option value="High-dose">High-dose (for elderly)</option>
+                    <option value="Live attenuated">Live Attenuated (LAIV)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="h1n1_specific_vaccine">H1N1-specific Vaccine (2009 pandemic)</label>
+                <select id="h1n1_specific_vaccine" name="h1n1_specific_vaccine">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                    <option value="Unknown">Unknown</option>
+                </select>
+            </div>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 2rem 0 1rem;">Treatment & Medications</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <div class="form-group">
+                <label for="antiviral_given">Antiviral Medication</label>
+                <select id="antiviral_given" name="antiviral_given">
+                    <option value="None">None given</option>
+                    <option value="Oseltamivir">Oseltamivir (Tamiflu)</option>
+                    <option value="Zanamivir">Zanamivir (Relenza)</option>
+                    <option value="Peramivir">Peramivir (Rapivab)</option>
+                    <option value="Baloxavir">Baloxavir marboxil (Xofluza)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="antiviral_start_date">Antiviral Start Date</label>
+                <input type="date" id="antiviral_start_date" name="antiviral_start_date">
+            </div>
+            
+            <div class="form-group">
+                <label for="time_to_treatment">Time from Symptom Onset to Treatment (hours)</label>
+                <input type="number" id="time_to_treatment" name="time_to_treatment" min="0">
+                <small>Important: Most effective if started within 48 hours</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="antibiotic">Antibiotic (if secondary bacterial infection)</label>
+                <input type="text" id="antibiotic" name="antibiotic" placeholder="e.g., Azithromycin, Amoxicillin">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="oxygen_therapy">Oxygen Therapy/Respiratory Support</label>
+            <select id="oxygen_therapy" name="oxygen_therapy">
+                <option value="None">None required</option>
+                <option value="Nasal cannula">Nasal Cannula</option>
+                <option value="Face mask">Face Mask</option>
+                <option value="High-flow">High-flow Oxygen</option>
+                <option value="CPAP">CPAP/BiPAP</option>
+                <option value="Mechanical ventilation">Mechanical Ventilation</option>
+                <option value="ECMO">ECMO</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="other_medications">Other Medications/Supportive Care</label>
+            <textarea id="other_medications" name="other_medications" rows="2" placeholder="Fever reducers, cough suppressants, hydration, etc."></textarea>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 2rem 0 1rem;">Complications</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <label><input type="checkbox" name="complication" value="pneumonia"> Pneumonia (Viral/Bacterial)</label>
+            <label><input type="checkbox" name="complication" value="bronchitis"> Bronchitis</label>
+            <label><input type="checkbox" name="complication" value="sinus"> Sinus Infections</label>
+            <label><input type="checkbox" name="complication" value="ear"> Ear Infections</label>
+            <label><input type="checkbox" name="complication" value="ards"> ARDS (Acute Respiratory Distress)</label>
+            <label><input type="checkbox" name="complication" value="sepsis"> Sepsis</label>
+            <label><input type="checkbox" name="complication" value="myocarditis"> Myocarditis</label>
+            <label><input type="checkbox" name="complication" value="encephalitis"> Encephalitis</label>
+            <label><input type="checkbox" name="complication" value="multi_organ"> Multi-organ Failure</label>
+            <label><input type="checkbox" name="complication" value="exacerbation"> Exacerbation of Chronic Conditions</label>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 2rem 0 1rem;">Outcome & Follow-up</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <div class="form-group">
+                <label for="days_to_recovery">Days Until Recovery (if recovered)</label>
+                <input type="number" id="days_to_recovery" name="days_to_recovery" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="icu_days">Days in ICU (if applicable)</label>
+                <input type="number" id="icu_days" name="icu_days" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="ventilator_days">Days on Ventilator (if applicable)</label>
+                <input type="number" id="ventilator_days" name="ventilator_days" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="total_hospital_days">Total Hospital Days</label>
+                <input type="number" id="total_hospital_days" name="total_hospital_days" min="0">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="notes">Additional Clinical Notes</label>
+            <textarea id="notes" name="notes" rows="4"></textarea>
+        </div>
+        
+        <div style="margin-top: 2rem;">
+            <button type="submit" class="btn btn-primary">Submit Report</button>
+            <button type="button" class="btn btn-danger" onclick="history.back()">Cancel</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('diagnosis_date').valueAsDate = new Date();
+    
+    document.getElementById('swineForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const patientId = sessionStorage.getItem('currentPatientId') || window.location.pathname.split('/').pop();
+        
+        const symptoms = Array.from(document.querySelectorAll('input[name="symptom"]:checked'))
+            .map(cb => cb.value);
+        
+        const riskFactors = Array.from(document.querySelectorAll('input[name="risk_factor"]:checked'))
+            .map(cb => cb.value);
+        
+        const complications = Array.from(document.querySelectorAll('input[name="complication"]:checked'))
+            .map(cb => cb.value);
+        
+        const formData = {
+            disease_type: 'SwineFlu',
+            diagnosis_date: document.getElementById('diagnosis_date').value,
+            severity: document.getElementById('severity').value,
+            status: document.getElementById('status').value,
+            symptoms: {
+                list: symptoms,
+                onset_date: document.getElementById('symptom_onset_date').value,
+                fever_duration: document.getElementById('fever_duration').value,
+                max_temperature: document.getElementById('max_temperature').value,
+                complications: complications
+            },
+            test_results: {
+                test_type: document.getElementById('test_type').value,
+                result: document.getElementById('test_result').value,
+                viral_load: document.getElementById('viral_load').value,
+                oxygen_saturation: document.getElementById('oxygen_saturation').value,
+                chest_xray: document.getElementById('chest_xray').value
+            },
+            travel_history: {
+                exposure: document.getElementById('exposure_history').value,
+                animal_contact: document.getElementById('animal_contact').value,
+                risk_factors: riskFactors
+            },
+            vaccination_status: {
+                current_season: document.getElementById('flu_vaccine_current').value,
+                vaccine_date: document.getElementById('vaccine_date').value,
+                vaccine_type: document.getElementById('vaccine_type').value,
+                h1n1_specific: document.getElementById('h1n1_specific_vaccine').value
+            },
+            treatment: {
+                hospitalization: document.getElementById('hospitalization').value,
+                antiviral: document.getElementById('antiviral_given').value,
+                antiviral_start_date: document.getElementById('antiviral_start_date').value,
+                time_to_treatment: document.getElementById('time_to_treatment').value,
+                antibiotic: document.getElementById('antibiotic').value,
+                oxygen_therapy: document.getElementById('oxygen_therapy').value,
+                other_medications: document.getElementById('other_medications').value,
+                days_to_recovery: document.getElementById('days_to_recovery').value,
+                icu_days: document.getElementById('icu_days').value,
+                ventilator_days: document.getElementById('ventilator_days').value,
+                total_hospital_days: document.getElementById('total_hospital_days').value
+            },
+            notes: document.getElementById('notes').value
+        };
+        
+        try {
+            const response = await fetch(`/user/add-disease-record/${patientId}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(formData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert('Swine Flu report submitted successfully!', 'success');
+                
+                if (result.risk_prediction) {
+                    const pred = result.risk_prediction;
+                    alert(`Risk Assessment:\n- Alert Level: ${pred.alert_level}\n- Outbreak Probability: ${(pred.probability * 100).toFixed(1)}%\n- R0: ${pred.r0}`);
+                }
+                
+                setTimeout(() => {
+                    window.location.href = '/user/dashboard';
+                }, 2000);
+            } else {
+                showAlert('Error submitting report', 'danger');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error submitting report', 'danger');
+        }
+    });
+</script>
+{% endblock %}

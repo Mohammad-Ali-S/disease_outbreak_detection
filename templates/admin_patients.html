@@ -1,0 +1,210 @@
+<!-- templates/admin_patients.html -->
+{% extends "base.html" %}
+
+{% block title %}Manage Patients - DODS{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem; color: #667eea;">👥 Patient Management</h1>
+
+<div class="card">
+    <div class="card-header">Search & Filter</div>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <input type="text" id="searchInput" placeholder="Search by name, ID, or city..." style="flex: 1; min-width: 300px;">
+        <select id="diseaseFilter" style="width: 200px;">
+            <option value="">All Diseases</option>
+            <option value="COVID19">COVID-19</option>
+            <option value="Cholera">Cholera</option>
+            <option value="HIV">HIV/AIDS</option>
+            <option value="SwineFlu">Swine Flu</option>
+        </select>
+        <button class="btn btn-primary" onclick="filterPatients()">Filter</button>
+        <button class="btn btn-success" onclick="exportData()">📥 Export CSV</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Patient List ({{ patients|length }} total)</div>
+    <div style="overflow-x: auto;">
+        <table id="patientsTable">
+            <thead>
+                <tr>
+                    <th>Patient ID</th>
+                    <th>Name</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Location</th>
+                    <th>Contact</th>
+                    <th>Registered</th>
+                    <th>Disease Records</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="patientsBody">
+                {% for patient in patients %}
+                <tr>
+                    <td><strong>{{ patient.patient_id }}</strong></td>
+                    <td>{{ patient.name }}</td>
+                    <td>{{ patient.age }}</td>
+                    <td>{{ patient.gender }}</td>
+                    <td>{{ patient.city }}, {{ patient.state }}</td>
+                    <td>{{ patient.contact or 'N/A' }}</td>
+                    <td>{{ patient.registered_date.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ patient.disease_records|length }} records</td>
+                    <td>
+                        <button class="btn btn-primary" onclick="viewPatient({{ patient.id }})" style="padding: 0.5rem 1rem; font-size: 0.9rem;">View</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Patient Details Modal -->
+<div id="patientModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto;">
+    <div style="background: white; margin: 2rem auto; max-width: 900px; border-radius: 10px; padding: 2rem; position: relative;">
+        <button onclick="closeModal()" style="position: absolute; top: 1rem; right: 1rem; background: #f44336; color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; font-weight: bold;">✕ Close</button>
+        <div id="patientDetails">
+            <div class="spinner"></div>
+        </div>
+    </div>
+</div>
+
+<!-- In admin_patients.html, update the viewPatient function to add: -->
+
+<div style="margin-top: 2rem;">
+    <button class="btn btn-primary" onclick="window.location.href='/user/add-disease-record/${patientId}'">➕ Add Disease Record</button>
+    <button class="btn btn-danger" onclick="deletePatient(${patientId})">🗑️ Delete Patient</button>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function filterPatients() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const diseaseFilter = document.getElementById('diseaseFilter').value;
+        const rows = document.querySelectorAll('#patientsBody tr');
+        
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const matchesSearch = text.includes(searchTerm);
+            const matchesDisease = diseaseFilter === '' || text.includes(diseaseFilter.toLowerCase());
+            
+            row.style.display = (matchesSearch && matchesDisease) ? '' : 'none';
+        });
+    }
+
+<!-- Add this delete function in the script section: -->
+async function deletePatient(patientId) {
+    if (!confirm('⚠️ WARNING: This will delete the patient and ALL associated disease records. Continue?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/delete-patient/${patientId}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('Patient deleted successfully', 'success');
+            closeModal();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert(result.error || 'Error deleting patient', 'danger');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Error deleting patient', 'danger');
+    }
+}
+    
+    async function viewPatient(patientId) {
+        const modal = document.getElementById('patientModal');
+        const details = document.getElementById('patientDetails');
+        
+        details.innerHTML = '<div class="spinner"></div>';
+        modal.style.display = 'block';
+        
+        try {
+            const response = await fetch(`/api/patient-details/${patientId}`);
+            const patient = await response.json();
+            
+            if (patient.error) {
+                details.innerHTML = `<div class="alert alert-danger">${patient.error}</div>`;
+                return;
+            }
+            
+            let diseaseRecordsHTML = '';
+            if (patient.disease_records && patient.disease_records.length > 0) {
+                diseaseRecordsHTML = '<h3 style="margin-top: 2rem; color: #667eea;">Disease Records</h3><table style="width: 100%; margin-top: 1rem;"><thead><tr><th>Disease</th><th>Date</th><th>Severity</th><th>Status</th><th>Risk Score</th></tr></thead><tbody>';
+                
+                patient.disease_records.forEach(record => {
+                    diseaseRecordsHTML += `
+                        <tr>
+                            <td>${record.disease_type}</td>
+                            <td>${record.diagnosis_date}</td>
+                            <td><span style="background: ${record.severity === 'Critical' ? '#dc3545' : record.severity === 'Severe' ? '#ff6b6b' : record.severity === 'Moderate' ? '#ffa500' : '#4facfe'}; color: white; padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.85rem;">${record.severity || 'N/A'}</span></td>
+                            <td>${record.status}</td>
+                            <td>${record.risk_score ? (record.risk_score * 100).toFixed(1) + '%' : 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+                diseaseRecordsHTML += '</tbody></table>';
+            } else {
+                diseaseRecordsHTML = '<p style="margin-top: 2rem; color: #999;">No disease records found</p>';
+            }
+            
+            details.innerHTML = `
+                <h2 style="color: #667eea; margin-bottom: 1.5rem;">Patient Details</h2>
+                
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; background: #f8f9fa; padding: 1.5rem; border-radius: 8px;">
+                    <div><strong>Patient ID:</strong> ${patient.patient_id}</div>
+                    <div><strong>Name:</strong> ${patient.name}</div>
+                    <div><strong>Age:</strong> ${patient.age} years</div>
+                    <div><strong>Gender:</strong> ${patient.gender}</div>
+                    <div><strong>Contact:</strong> ${patient.contact || 'N/A'}</div>
+                    <div><strong>City:</strong> ${patient.city}, ${patient.state}</div>
+                    <div><strong>Address:</strong> ${patient.address || 'N/A'}</div>
+                    <div><strong>Registered:</strong> ${patient.registered_date}</div>
+                    <div><strong>Location:</strong> ${patient.latitude.toFixed(4)}, ${patient.longitude.toFixed(4)}</div>
+                    <div><strong>Total Records:</strong> ${patient.disease_records ? patient.disease_records.length : 0}</div>
+                </div>
+                
+                ${diseaseRecordsHTML}
+                
+                <div style="margin-top: 2rem;">
+                    <button class="btn btn-primary" onclick="window.location.href='/user/add-disease-record/${patientId}'">➕ Add Disease Record</button>
+                </div>
+            `;
+            
+        } catch (error) {
+            console.error('Error loading patient details:', error);
+            details.innerHTML = `<div class="alert alert-danger">Error loading patient details: ${error.message}</div>`;
+        }
+    }
+    
+    function closeModal() {
+        document.getElementById('patientModal').style.display = 'none';
+    }
+    
+    function exportData() {
+        const disease = document.getElementById('diseaseFilter').value;
+        let url = '/api/export-data/csv';
+        if (disease) url += `?disease_type=${disease}`;
+        window.location.href = url;
+    }
+    
+    // Real-time search
+    document.getElementById('searchInput').addEventListener('input', filterPatients);
+    
+    // Close modal on outside click
+    document.getElementById('patientModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+</script>
+{% endblock %}
