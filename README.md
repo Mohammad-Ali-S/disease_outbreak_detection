@@ -1,82 +1,88 @@
 # Disease Outbreak Detection System
 
-## Prerequisites
+A comprehensive system for detecting and visualizing disease outbreaks using real-time hospital data and mock ERP simulations.
 
-Before running the project, ensure you have the following installed:
+## 🚀 Quick Start (First Time Setup)
 
--   **Python 3.8+**: [Download Python](https://www.python.org/downloads/)
--   **Node.js 16+ & npm**: [Download Node.js](https://nodejs.org/)
+If you are setting this up on a new machine, follow these steps in order.
 
-## Installation
+### 1. Prerequisites
+- **Python 3.8+**: [Download Here](https://www.python.org/downloads/)
+- **Node.js 16+ & npm**: [Download Here](https://nodejs.org/)
+- **Git**: [Download Here](https://git-scm.com/downloads)
 
-### 1. Backend Setup
-
-Open a terminal in the project root directory:
+### 2. Backend Setup
+Open a terminal in the project folder and run:
 
 ```bash
-# Optional: Create a virtual environment
+# 1. Create a virtual environment
 python -m venv venv
+
+# 2. Activate it:
 # Windows:
 .\venv\Scripts\activate
 # Mac/Linux:
 source venv/bin/activate
 
-# Install Python dependencies
+# 3. Install Python dependencies
 pip install -r requirements.txt
 ```
 
-### 2. Frontend Setup
-
-Open a new terminal (or the same one) and navigate to the `frontend` directory:
+### 3. Frontend Setup
+Open a **new terminal** (or use the same one), go to the `frontend` folder:
 
 ```bash
 cd frontend
 npm install
 ```
 
-## Database Setup
-
-Before running the app for the first time, populate the database with demo data:
+### 4. Initialize Database
+Back in the project root (make sure your virtual environment is active):
 
 ```bash
-# From the project root directory
+# Verify you are in the root directory (where populate_demo_data.py is)
 python populate_demo_data.py
 ```
+*This creates `backend/database/warehouse.db` with sample data.*
 
-This will create/update `backend/database/warehouse.db` with synthetic hospital entry data.
+---
 
-## Running the Application
+## 🎮 Running the Application
 
-### Option A: The "All-in-One" Script (Recommended)
+We provide a single script to launch everything (Backend, Frontend, and ERP Simulator).
 
-We have provided a script that launches the Backend, Frontend, and ERP Simulator simultaneously.
-
-From the project root:
+1. **Ensure your virtual environment is active** (`.\venv\Scripts\activate`).
+2. Run the demo script from the project root:
 
 ```bash
 python run_demo.py
 ```
 
-This script will start:
--   **Main App (Frontend)**: `http://localhost:3000`
--   **Backend API**: `http://localhost:8000`
--   **ERP Simulator**: `http://localhost:8001`
+This will automatically start:
+- **Public Dashboard**: [http://localhost:3000](http://localhost:3000)
+- **Hospital Admin Portal**: [http://localhost:3000/hospital](http://localhost:3000/hospital)
+- **ERP Simulator (Mock Data)**: [http://localhost:8001](http://localhost:8001)
+- **Backend API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-**To Stop:** Press `Ctrl+C` in the terminal where the script is running. It will automatically terminate all processes.
+**To Stop:** Press `Ctrl+C` in the terminal to shut down all services.
 
-### Option B: Manual Startup
+---
 
-If you prefer to run services individually, open **three separate terminals**:
+## 🔧 Manual Startup (Alternative)
+
+If the script doesn't work or you prefer manual control, use 3 separate terminals:
 
 **Terminal 1: Backend**
 ```bash
+.\venv\Scripts\activate
 cd backend
 uvicorn main:app --port 8000 --reload
 ```
 
 **Terminal 2: ERP Simulator**
 ```bash
-# From project root
+.\venv\Scripts\activate
+# Run from project root
 uvicorn mock_erp_gui.main:app --port 8001 --reload
 ```
 
@@ -86,7 +92,8 @@ cd frontend
 npm run dev
 ```
 
-## Troubleshooting
+## 🛠 Troubleshooting
 
--   **Port Conflicts**: If the script fails, ensure ports `3000`, `8000`, and `8001` are not being used by other applications. The `run_demo.py` script tries to auto-kill processes on these ports, but you may need to manually close them.
--   **Database Errors**: If you see errors about missing tables, run `python populate_demo_data.py` again.
+- **"Module not found" errors**: Ensure you activated the virtual environment (`.\venv\Scripts\activate`) before running python commands.
+- **Port Conflicts**: Ensure ports `3000`, `8000`, and `8001` are free.
+- **Database Errors**: Rerun `python populate_demo_data.py` to reset the database.
