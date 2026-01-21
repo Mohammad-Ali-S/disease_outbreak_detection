@@ -1,0 +1,415 @@
+<!-- templates/admin_analytics.html -->
+{% extends "base.html" %}
+
+{% block title %}Analytics - DODS{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem; color: #667eea;">📊 Advanced Analytics</h1>
+
+<div class="card">
+    <div class="card-header">Select Disease & Location</div>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <select id="diseaseSelect" class="btn">
+            <option value="COVID19">COVID-19</option>
+            <option value="Cholera">Cholera</option>
+            <option value="HIV">HIV/AIDS</option>
+            <option value="SwineFlu">Swine Flu</option>
+        </select>
+        
+        <select id="locationSelect" class="btn">
+            <option value="">All Locations</option>
+            <option value="Pune">Pune</option>
+            <option value="Mumbai">Mumbai</option>
+            <option value="Delhi">Delhi</option>
+            <option value="Bangalore">Bangalore</option>
+        </select>
+        
+        <button class="btn btn-primary" onclick="loadAnalytics()">Load Analytics</button>
+        <button class="btn btn-success" onclick="viewMap()">View on Map</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Geospatial Cluster Visualization</div>
+    <div id="map"></div>
+</div>
+
+<div class="card">
+    <div class="card-header">Time Series Analysis</div>
+    <div class="chart-container">
+        <canvas id="timeSeriesChart"></canvas>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Frequency Distribution</div>
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+        <div class="chart-container">
+            <canvas id="ageDistChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="severityChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Outbreak Prediction & ML Insights</div>
+    <div id="mlInsights">
+        <div class="spinner"></div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Cluster Analysis Report</div>
+    <div id="clusterReport">
+        <div class="spinner"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let map;
+    let markerCluster;
+    
+    // Initialize map
+    function initMap() {
+        map = L.map('map').setView([20.5937, 78.9629], 5);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        markerCluster = L.markerClusterGroup();
+        map.addLayer(markerCluster);
+    }
+    
+    async function loadAnalytics() {
+        const disease = document.getElementById('diseaseSelect').value;
+        const location = document.getElementById('locationSelect').value;
+        
+        // Load geospatial data
+        await loadGeospatialData(disease);
+        
+        // Load time series
+        await loadTimeSeries(disease, location);
+        
+        // Load frequency analysis
+        await loadFrequencyAnalysis(disease);
+        
+        // Load ML insights
+        await loadMLInsights(disease, location);
+        
+        // Load cluster analysis
+        await loadClusterAnalysis(disease);
+    }
+    
+    async function loadGeospatialData(disease) {
+        try {
+            const response = await fetch(`/api/geospatial-data/${disease}?days=30`);
+            const data = await response.json();
+            
+            markerCluster.clearLayers();
+            
+            // Add markers with detailed patient info
+            data.markers.forEach(marker => {
+                const color = marker.severity === 'Critical' ? 'red' : 
+                             marker.severity === 'Severe' ? 'orange' :
+                             marker.severity === 'Moderate' ? 'yellow' : 'green';
+                
+                const circleMarker = L.circleMarker([marker.lat, marker.lng], {
+                    radius: 8,
+                    fillColor: color,
+                    color: '#fff',
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+                
+                circleMarker.bindPopup(`
+                    <div style="font-family: Arial, sans-serif;">
+                        <h4 style="margin: 0 0 10px 0; color: #667eea;">Patient Details</h4>
+                        <p><strong>ID:</strong> ${marker.patient_code}</p>
+                        <p><strong>Name:</strong> ${marker.name}</p>
+                        <p><strong>Age:</strong> ${marker.age} | <strong>Gender:</strong> ${marker.gender}</p>
+                        <p><strong>Location:</strong> ${marker.city}, ${marker.state}</p>
+                        <p><strong>Diagnosis Date:</strong> ${marker.date}</p>
+                        <p><strong>Severity:</strong> <span style="background: ${color}; color: white; padding: 2px 8px; border-radius: 10px;">${marker.severity}</span></p>
+                        <p><strong>Status:</strong> ${marker.status}</p>
+                        <p><strong>Risk Score:</strong> ${marker.risk_score ? marker.risk_score + '%' : 'N/A'}</p>
+                        ${marker.cluster_id ? `<p><strong>Cluster:</strong> ${marker.cluster_id}</p>` : ''}
+                        <p><strong>Coordinates:</strong> ${marker.lat.toFixed(4)}, ${marker.lng.toFixed(4)}</p>
+                    </div>
+                `);
+                
+                markerCluster.addLayer(circleMarker);
+            });
+            
+            // Add cluster circles
+            data.clusters.forEach(cluster => {
+                L.circle([cluster.center.lat, cluster.center.lon], {
+                    radius: cluster.radius_km * 1000,
+                    color: cluster.risk_level === 'High' ? 'red' : 'orange',
+                    fillColor: cluster.risk_level === 'High' ? 'red' : 'orange',
+                    fillOpacity: 0.2
+                }).addTo(map).bindPopup(`
+                    <strong>Cluster ${cluster.cluster_id}</strong><br>
+                    Cases: ${cluster.case_count}<br>
+                    Risk Level: ${cluster.risk_level}<br>
+                    Radius: ${cluster.radius_km.toFixed(2)} km
+                `);
+            });
+            
+            // Fit map to markers if they exist
+            if (data.markers.length > 0) {
+                const bounds = L.latLngBounds(data.markers.map(m => [m.lat, m.lng]));
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+            
+        } catch (error) {
+            console.error('Error loading geospatial data:', error);
+        }
+    }
+    
+    async function loadTimeSeries(disease, location) {
+        try {
+            let url = `/api/time-series/${disease}?days=90`;
+            if (location) url += `&location=${location}`;
+            
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            const ctx = document.getElementById('timeSeriesChart');
+            
+            // Clear previous chart
+            const existingChart = Chart.getChart(ctx);
+            if (existingChart) existingChart.destroy();
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.time_series.map(d => d.date),
+                    datasets: [
+                        {
+                            label: 'New Cases',
+                            data: data.time_series.map(d => d.new_cases),
+                            borderColor: 'rgb(255, 99, 132)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                            fill: true
+                        },
+                        {
+                            label: 'Active Cases',
+                            data: data.time_series.map(d => d.active_cases),
+                            borderColor: 'rgb(255, 205, 86)',
+                            backgroundColor: 'rgba(255, 205, 86, 0.1)',
+                            fill: true
+                        },
+                        {
+                            label: 'Recovered',
+                            data: data.time_series.map(d => d.recovered_cases),
+                            borderColor: 'rgb(75, 192, 192)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `${disease} - Time Series Analysis`
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error loading time series:', error);
+        }
+    }
+    
+    async function loadFrequencyAnalysis(disease) {
+        try {
+            const response = await fetch(`/api/frequency-analysis/${disease}?days=90`);
+            const data = await response.json();
+            
+            // Age distribution chart
+            const ageCtx = document.getElementById('ageDistChart');
+            const existingAgeChart = Chart.getChart(ageCtx);
+            if (existingAgeChart) existingAgeChart.destroy();
+            
+            new Chart(ageCtx, {
+                type: 'pie',
+                data: {
+                    labels: data.age_distribution.map(d => d.age_group),
+                    datasets: [{
+                        data: data.age_distribution.map(d => d.count),
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 205, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Age Distribution'
+                        }
+                    }
+                }
+            });
+            
+            // Severity chart
+            const sevCtx = document.getElementById('severityChart');
+            const existingSevChart = Chart.getChart(sevCtx);
+            if (existingSevChart) existingSevChart.destroy();
+            
+            new Chart(sevCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.severity_distribution.map(d => d.severity),
+                    datasets: [{
+                        data: data.severity_distribution.map(d => d.count),
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(255, 205, 86, 0.8)',
+                            'rgba(255, 159, 64, 0.8)',
+                            'rgba(255, 99, 132, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Severity Distribution'
+                        }
+                    }
+                }
+            });
+            
+        } catch (error) {
+            console.error('Error loading frequency analysis:', error);
+        }
+    }
+    
+    async function loadMLInsights(disease, location) {
+        try {
+            let url = `/api/ml-insights/${disease}`;
+            if (location) url += `?location=${location}`;
+            
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">';
+            
+            // Outbreak prediction card
+            if (data.outbreak_prediction) {
+                const pred = data.outbreak_prediction;
+                const alertClass = pred.alert_level === 'Critical' ? 'danger' : 
+                                  pred.alert_level === 'High' ? 'warning' : 'info';
+                
+                html += `
+                    <div class="alert alert-${alertClass}">
+                        <h4>Outbreak Prediction</h4>
+                        <p><strong>Alert Level:</strong> ${pred.alert_level}</p>
+                        <p><strong>Probability:</strong> ${(pred.probability * 100).toFixed(1)}%</p>
+                        <p><strong>Confidence:</strong> ${(pred.confidence * 100).toFixed(1)}%</p>
+                        <p><strong>Predicted Cases:</strong> ${pred.predicted_cases}</p>
+                        <p><strong>R0:</strong> ${pred.r0}</p>
+                    </div>
+                `;
+            }
+            
+            // Time series patterns
+            if (data.time_series_patterns) {
+                const patterns = data.time_series_patterns;
+                html += `
+                    <div class="alert alert-info">
+                        <h4>Time Series Patterns</h4>
+                        <p><strong>Trend:</strong> ${patterns.trend}</p>
+                        <p><strong>Volatility:</strong> ${patterns.volatility}</p>
+                        <p><strong>Growth Rate:</strong> ${patterns.growth_rate}%</p>
+                        <p><strong>Peaks Detected:</strong> ${patterns.peaks_detected}</p>
+                    </div>
+                `;
+            }
+            
+            // Risk assessment
+            if (data.risk_assessment) {
+                const risk = data.risk_assessment;
+                html += `
+                    <div class="alert alert-warning">
+                        <h4>Risk Assessment</h4>
+                        <p><strong>R0:</strong> ${risk.reproduction_number}</p>
+                        <p><strong>Risk Level:</strong> ${risk.risk_level}</p>
+                        <p><strong>Recommendation:</strong> ${risk.recommendation}</p>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            document.getElementById('mlInsights').innerHTML = html;
+            
+        } catch (error) {
+            console.error('Error loading ML insights:', error);
+            document.getElementById('mlInsights').innerHTML = '<p>Error loading ML insights</p>';
+        }
+    }
+    
+    async function loadClusterAnalysis(disease) {
+        try {
+            const response = await fetch(`/api/cluster-analysis/${disease}?days=30`);
+            const data = await response.json();
+            
+            let html = `<p><strong>Total Clusters Detected:</strong> ${data.total_clusters}</p>`;
+            
+            if (data.clusters.length > 0) {
+                html += '<table><thead><tr><th>Cluster ID</th><th>Location</th><th>Cases</th><th>Radius (km)</th><th>Risk Level</th><th>Breakdown</th></tr></thead><tbody>';
+                
+                data.clusters.forEach(cluster => {
+                    html += `
+                        <tr>
+                            <td>${cluster.cluster_id}</td>
+                            <td>${cluster.center.lat.toFixed(4)}, ${cluster.center.lon.toFixed(4)}</td>
+                            <td>${cluster.case_count}</td>
+                            <td>${cluster.radius_km.toFixed(2)}</td>
+                            <td><span class="badge badge-${cluster.risk_level === 'High' ? 'danger' : 'warning'}">${cluster.risk_level}</span></td>
+                            <td>Active: ${cluster.status_breakdown.Active}, Recovered: ${cluster.status_breakdown.Recovered}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+            } else {
+                html += '<p>No clusters detected</p>';
+            }
+            
+            document.getElementById('clusterReport').innerHTML = html;
+            
+        } catch (error) {
+            console.error('Error loading cluster analysis:', error);
+            document.getElementById('clusterReport').innerHTML = '<p>Error loading cluster analysis</p>';
+        }
+    }
+    
+    function viewMap() {
+        document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Initialize
+    initMap();
+    loadAnalytics();
+</script>
+{% endblock %}

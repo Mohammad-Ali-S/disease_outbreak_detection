@@ -1,0 +1,137 @@
+<!-- templates/admin_train_model.html -->
+{% extends "base.html" %}
+
+{% block title %}Train ML Models - DODS{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem; color: #667eea;">🤖 Train ML Models</h1>
+
+<div class="card">
+    <div class="card-header">Model Training</div>
+    <p style="margin-bottom: 1.5rem;">
+        Train outbreak prediction models on your imported data. The system uses ensemble learning with multiple algorithms.
+    </p>
+    
+    <form id="trainForm">
+        <div class="form-group">
+            <label for="diseaseType">Select Disease for Training *</label>
+            <select id="diseaseType" name="disease_type" required>
+                <option value="">Choose Disease</option>
+                <option value="COVID19">COVID-19</option>
+                <option value="Cholera">Cholera</option>
+                <option value="HIV">HIV/AIDS</option>
+                <option value="SwineFlu">Swine Flu</option>
+            </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">🚀 Start Training</button>
+    </form>
+    
+    <div id="trainingProgress" style="display: none; margin-top: 2rem;">
+        <div class="spinner"></div>
+        <p style="text-align: center; margin-top: 1rem;">Training models... This may take a few minutes.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Training Results</div>
+    <div id="trainingResults">
+        <p style="color: #999; text-align: center; padding: 3rem;">No training completed yet</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">📚 ML Algorithms Used</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+            <h4 style="color: #667eea;">Random Forest</h4>
+            <p style="font-size: 0.9rem;">Ensemble decision trees for robust predictions</p>
+        </div>
+        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+            <h4 style="color: #667eea;">Gradient Boosting</h4>
+            <p style="font-size: 0.9rem;">Sequential ensemble for high accuracy</p>
+        </div>
+        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+            <h4 style="color: #667eea;">SVM</h4>
+            <p style="font-size: 0.9rem;">Support Vector Machine for classification</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('trainForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const diseaseType = document.getElementById('diseaseType').value;
+        
+        if (!diseaseType) {
+            showAlert('Please select a disease type', 'danger');
+            return;
+        }
+        
+        document.getElementById('trainingProgress').style.display = 'block';
+        
+        const formData = new FormData();
+        formData.append('disease_type', diseaseType);
+        
+        try {
+            const response = await fetch('/admin/train-model', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert('Training completed successfully!', 'success');
+                
+                let resultsHTML = `
+                    <div style="background: #d4edda; padding: 2rem; border-radius: 8px; border-left: 4px solid #28a745;">
+                        <h4 style="margin-bottom: 1rem;">✅ Training Completed</h4>
+                        <p><strong>Disease:</strong> ${diseaseType}</p>
+                        <p><strong>Training Samples:</strong> ${result.training_samples}</p>
+                        <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+                        
+                        <h4 style="margin-top: 1.5rem;">Model Accuracies:</h4>
+                        <table style="width: 100%; margin-top: 1rem;">
+                            <thead>
+                                <tr>
+                                    <th>Algorithm</th>
+                                    <th>Accuracy</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                for (const [model, accuracy] of Object.entries(result.results)) {
+                    resultsHTML += `
+                        <tr>
+                            <td style="text-transform: capitalize;">${model.replace('_', ' ')}</td>
+                            <td><strong>${accuracy}%</strong></td>
+                        </tr>
+                    `;
+                }
+                
+                resultsHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                document.getElementById('trainingResults').innerHTML = resultsHTML;
+                
+            } else {
+                showAlert(result.message || 'Training failed', 'danger');
+            }
+            
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error training models: ' + error.message, 'danger');
+        } finally {
+            document.getElementById('trainingProgress').style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,264 @@
+<!-- templates/forms/hiv_form.html -->
+{% extends "base.html" %}
+
+{% block title %}HIV/AIDS Report Form - DODS{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem; color: #667eea;">🔬 HIV/AIDS Disease Report</h1>
+
+<div class="card">
+    <form id="hivForm">
+        <input type="hidden" name="disease_type" value="HIV">
+        
+        <h3 style="color: #667eea; margin-bottom: 1rem;">Basic Information</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <div class="form-group">
+                <label for="diagnosis_date">Diagnosis Date *</label>
+                <input type="date" id="diagnosis_date" name="diagnosis_date" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="hiv_stage">HIV Stage *</label>
+                <select id="hiv_stage" name="hiv_stage" required>
+                    <option value="">Select Stage</option>
+                    <option value="Stage 1">Stage 1 (Asymptomatic)</option>
+                    <option value="Stage 2">Stage 2 (Mild symptoms)</option>
+                    <option value="Stage 3">Stage 3 (Advanced/AIDS)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="status">Status *</label>
+                <select id="status" name="status" required>
+                    <option value="Active">Active (On treatment)</option>
+                    <option value="Untreated">Untreated</option>
+                    <option value="Deceased">Deceased</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="transmission_route">Suspected Transmission Route</label>
+                <select id="transmission_route" name="transmission_route">
+                    <option value="">Select if known</option>
+                    <option value="Sexual">Sexual contact</option>
+                    <option value="Blood">Blood transfusion</option>
+                    <option value="MTCT">Mother-to-child</option>
+                    <option value="Needles">Shared needles</option>
+                    <option value="Unknown">Unknown</option>
+                </select>
+            </div>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 2rem 0 1rem;">Laboratory Tests</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <div class="form-group">
+                <label for="test_type">HIV Test Type *</label>
+                <select id="test_type" name="test_type" required>
+                    <option value="">Select Test</option>
+                    <option value="ELISA">ELISA</option>
+                    <option value="Western Blot">Western Blot</option>
+                    <option value="Rapid Test">Rapid Test</option>
+                    <option value="PCR">PCR (Viral Load)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="test_result">Test Result *</label>
+                <select id="test_result" name="test_result" required>
+                    <option value="">Select Result</option>
+                    <option value="Positive">Positive</option>
+                    <option value="Negative">Negative</option>
+                    <option value="Indeterminate">Indeterminate</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="cd4_count">CD4 Count (cells/μL) *</label>
+                <input type="number" id="cd4_count" name="cd4_count" min="0" required>
+                <small>Normal: 500-1600</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="viral_load">Viral Load (copies/mL)</label>
+                <input type="number" id="viral_load" name="viral_load" min="0">
+                <small>Undetectable: <50</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="cd4_percentage">CD4 Percentage (%)</label>
+                <input type="number" id="cd4_percentage" name="cd4_percentage" min="0" max="100" step="0.1">
+            </div>
+            
+            <div class="form-group">
+                <label for="hiv_subtype">HIV Subtype (if tested)</label>
+                <input type="text" id="hiv_subtype" name="hiv_subtype" placeholder="e.g., HIV-1, HIV-2">
+            </div>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 2rem 0 1rem;">Clinical Symptoms</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <label><input type="checkbox" name="symptom" value="fever"> Persistent Fever</label>
+            <label><input type="checkbox" name="symptom" value="weight_loss"> Weight Loss (>10%)</label>
+            <label><input type="checkbox" name="symptom" value="fatigue"> Chronic Fatigue</label>
+            <label><input type="checkbox" name="symptom" value="night_sweats"> Night Sweats</label>
+            <label><input type="checkbox" name="symptom" value="diarrhea"> Chronic Diarrhea</label>
+            <label><input type="checkbox" name="symptom" value="lymph_nodes"> Swollen Lymph Nodes</label>
+            <label><input type="checkbox" name="symptom" value="rash"> Skin Rash</label>
+            <label><input type="checkbox" name="symptom" value="oral_thrush"> Oral Thrush</label>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 2rem 0 1rem;">Opportunistic Infections</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <label><input type="checkbox" name="opportunistic" value="tb"> Tuberculosis (TB)</label>
+            <label><input type="checkbox" name="opportunistic" value="pcp"> Pneumocystis Pneumonia (PCP)</label>
+            <label><input type="checkbox" name="opportunistic" value="candidiasis"> Candidiasis</label>
+            <label><input type="checkbox" name="opportunistic" value="toxoplasmosis"> Toxoplasmosis</label>
+            <label><input type="checkbox" name="opportunistic" value="cmv"> Cytomegalovirus (CMV)</label>
+            <label><input type="checkbox" name="opportunistic" value="kaposi"> Kaposi's Sarcoma</label>
+            <label><input type="checkbox" name="opportunistic" value="cryptococcal"> Cryptococcal Meningitis</label>
+            <label><input type="checkbox" name="opportunistic" value="herpes"> Herpes Simplex</label>
+        </div>
+        
+        <div class="form-group">
+            <label for="other_infections">Other Infections/Conditions</label>
+            <textarea id="other_infections" name="other_infections" rows="2"></textarea>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 2rem 0 1rem;">Antiretroviral Therapy (ART)</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <div class="form-group">
+                <label for="art_status">ART Status</label>
+                <select id="art_status" name="art_status">
+                    <option value="Not started">Not started</option>
+                    <option value="Initiated">Recently initiated</option>
+                    <option value="On treatment">On treatment</option>
+                    <option value="Stopped">Treatment stopped</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="art_start_date">ART Start Date</label>
+                <input type="date" id="art_start_date" name="art_start_date">
+            </div>
+            
+            <div class="form-group">
+                <label for="art_regimen">Current ART Regimen</label>
+                <input type="text" id="art_regimen" name="art_regimen" placeholder="e.g., TDF+3TC+EFV">
+            </div>
+            
+            <div class="form-group">
+                <label for="adherence">Treatment Adherence</label>
+                <select id="adherence" name="adherence">
+                    <option value="Excellent">Excellent (>95%)</option>
+                    <option value="Good">Good (85-95%)</option>
+                    <option value="Fair">Fair (70-85%)</option>
+                    <option value="Poor">Poor (<70%)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="art_side_effects">Side Effects/Adverse Reactions</label>
+            <textarea id="art_side_effects" name="art_side_effects" rows="2"></textarea>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 2rem 0 1rem;">Prevention & Support</h3>
+        
+        <div class="form-group">
+            <label for="prophylaxis">Prophylactic Medications</label>
+            <textarea id="prophylaxis" name="prophylaxis" rows="2" placeholder="e.g., Cotrimoxazole, Isoniazid"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="counseling">Counseling/Support Services</label>
+            <textarea id="counseling" name="counseling" rows="2"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="notes">Additional Notes</label>
+            <textarea id="notes" name="notes" rows="4"></textarea>
+        </div>
+        
+        <div style="margin-top: 2rem;">
+            <button type="submit" class="btn btn-primary">Submit Report</button>
+            <button type="button" class="btn btn-danger" onclick="history.back()">Cancel</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('diagnosis_date').valueAsDate = new Date();
+    
+    document.getElementById('hivForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const patientId = window.location.pathname.split('/').pop();
+        
+        const symptoms = Array.from(document.querySelectorAll('input[name="symptom"]:checked'))
+            .map(cb => cb.value);
+        
+        const opportunistic = Array.from(document.querySelectorAll('input[name="opportunistic"]:checked'))
+            .map(cb => cb.value);
+        
+        const formData = {
+            disease_type: 'HIV',
+            diagnosis_date: document.getElementById('diagnosis_date').value,
+            severity: document.getElementById('hiv_stage').value,
+            status: document.getElementById('status').value,
+            symptoms: {
+                list: symptoms,
+                opportunistic_infections: opportunistic,
+                other_infections: document.getElementById('other_infections').value
+            },
+            test_results: {
+                test_type: document.getElementById('test_type').value,
+                result: document.getElementById('test_result').value,
+                cd4_count: document.getElementById('cd4_count').value,
+                viral_load: document.getElementById('viral_load').value,
+                cd4_percentage: document.getElementById('cd4_percentage').value,
+                hiv_subtype: document.getElementById('hiv_subtype').value
+            },
+            travel_history: {
+                transmission_route: document.getElementById('transmission_route').value
+            },
+            treatment: {
+                art_status: document.getElementById('art_status').value,
+                art_start_date: document.getElementById('art_start_date').value,
+                art_regimen: document.getElementById('art_regimen').value,
+                adherence: document.getElementById('adherence').value,
+                side_effects: document.getElementById('art_side_effects').value,
+                prophylaxis: document.getElementById('prophylaxis').value,
+                counseling: document.getElementById('counseling').value
+            },
+            notes: document.getElementById('notes').value
+        };
+        
+        try {
+            const response = await fetch(`/user/add-disease-record/${patientId}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(formData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert('HIV/AIDS report submitted successfully!', 'success');
+                setTimeout(() => window.location.href = '/user/dashboard', 2000);
+            } else {
+                showAlert('Error submitting report', 'danger');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error submitting report', 'danger');
+        }
+    });
+</script>
+{% endblock %}

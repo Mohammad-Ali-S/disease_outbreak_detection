@@ -1,0 +1,181 @@
+<!-- templates/admin_alerts.html -->
+{% extends "base.html" %}
+
+{% block title %}Outbreak Alerts - DODS{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem; color: #667eea;">🚨 Outbreak Alerts Management</h1>
+
+<div class="stats-grid">
+    <div class="stat-card warning">
+        <div class="stat-value" id="activeAlerts">{{ alerts|selectattr('status', 'equalto', 'Active')|list|length }}</div>
+        <div class="stat-label">Active Alerts</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-value" id="criticalAlerts">{{ alerts|selectattr('alert_level', 'equalto', 'Critical')|list|length }}</div>
+        <div class="stat-label">Critical Level</div>
+    </div>
+    
+    <div class="stat-card info">
+        <div class="stat-value" id="highAlerts">{{ alerts|selectattr('alert_level', 'equalto', 'High')|list|length }}</div>
+        <div class="stat-label">High Risk</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Filter Alerts</div>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <select id="diseaseFilterAlert" style="width: 200px;">
+            <option value="">All Diseases</option>
+            <option value="COVID19">COVID-19</option>
+            <option value="Cholera">Cholera</option>
+            <option value="HIV">HIV/AIDS</option>
+            <option value="SwineFlu">Swine Flu</option>
+        </select>
+        
+        <select id="levelFilter" style="width: 200px;">
+            <option value="">All Levels</option>
+            <option value="Critical">Critical</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+        </select>
+        
+        <select id="statusFilter" style="width: 200px;">
+            <option value="">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Resolved">Resolved</option>
+        </select>
+        
+        <button class="btn btn-primary" onclick="filterAlerts()">Apply Filter</button>
+        <button class="btn btn-success" onclick="generateAlerts()">🔄 Generate New Alerts</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Active Alerts</div>
+    <div id="alertsList">
+        {% for alert in alerts %}
+        <div class="alert-item" style="border-left: 4px solid 
+            {% if alert.alert_level == 'Critical' %}#dc3545
+            {% elif alert.alert_level == 'High' %}#ff6b6b
+            {% elif alert.alert_level == 'Medium' %}#ffa500
+            {% else %}#4facfe{% endif %}; 
+            padding: 1.5rem; margin-bottom: 1rem; background: #f8f9fa; border-radius: 8px;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div style="flex: 1;">
+                    <h3 style="color: #333; margin-bottom: 0.5rem;">
+                        🦠 {{ alert.disease_type }} Outbreak Alert
+                        <span style="background: 
+                            {% if alert.alert_level == 'Critical' %}#dc3545
+                            {% elif alert.alert_level == 'High' %}#ff6b6b
+                            {% elif alert.alert_level == 'Medium' %}#ffa500
+                            {% else %}#4facfe{% endif %}; 
+                            color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; margin-left: 1rem;">
+                            {{ alert.alert_level }}
+                        </span>
+                    </h3>
+                    
+                    <p style="color: #666; margin-bottom: 0.5rem;">
+                        <strong>Location:</strong> {{ alert.location }} | {{ alert.affected_area or 'Multiple areas' }}
+                    </p>
+                    
+                    <p style="color: #666; margin-bottom: 0.5rem;">
+                        <strong>Predicted Cases:</strong> {{ alert.predicted_cases }} | 
+                        <strong>Confidence:</strong> {{ (alert.confidence_score * 100)|round(1) }}%
+                    </p>
+                    
+                    <p style="color: #666; margin-bottom: 0.5rem;">
+                        <strong>Alert Date:</strong> {{ alert.alert_date.strftime('%Y-%m-%d %H:%M') }}
+                    </p>
+                    
+                    <p style="color: #666;">
+                        {{ alert.description or 'Outbreak risk detected based on ML prediction models.' }}
+                    </p>
+                </div>
+                
+                <div style="display: flex; gap: 0.5rem;">
+                    {% if alert.status == 'Active' %}
+                    <button class="btn btn-success" onclick="resolveAlert({{ alert.id }})" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                        ✓ Resolve
+                    </button>
+                    {% else %}
+                    <span style="background: #28a745; color: white; padding: 0.5rem 1rem; border-radius: 5px; font-size: 0.9rem;">
+                        ✓ Resolved
+                    </span>
+                    {% endif %}
+                    
+                    <button class="btn btn-primary" onclick="viewAlertDetails({{ alert.id }})" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                        📊 Details
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        {% if not alerts %}
+        <div style="text-align: center; padding: 3rem; color: #999;">
+            <h3>No alerts found</h3>
+            <p>System is monitoring for outbreak patterns</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function filterAlerts() {
+        const disease = document.getElementById('diseaseFilterAlert').value.toLowerCase();
+        const level = document.getElementById('levelFilter').value.toLowerCase();
+        const status = document.getElementById('statusFilter').value.toLowerCase();
+        
+        const alerts = document.querySelectorAll('.alert-item');
+        
+        alerts.forEach(alert => {
+            const text = alert.textContent.toLowerCase();
+            const matchesDisease = !disease || text.includes(disease);
+            const matchesLevel = !level || text.includes(level);
+            const matchesStatus = !status || text.includes(status);
+            
+            alert.style.display = (matchesDisease && matchesLevel && matchesStatus) ? '' : 'none';
+        });
+    }
+    
+    async function resolveAlert(alertId) {
+        if (!confirm('Mark this alert as resolved?')) return;
+        
+        try {
+            // In production, call API to update alert status
+            alert('Alert marked as resolved (API call would go here)');
+            location.reload();
+        } catch (error) {
+            console.error('Error resolving alert:', error);
+            alert('Error resolving alert');
+        }
+    }
+    
+    async function generateAlerts() {
+        if (!confirm('Run ML prediction to generate new alerts? This will analyze all recent data.')) return;
+        
+        try {
+            showAlert('Generating alerts... Please wait.', 'info');
+            
+            // In production, call API endpoint
+            setTimeout(() => {
+                showAlert('Alert generation complete!', 'success');
+                location.reload();
+            }, 2000);
+        } catch (error) {
+            console.error('Error generating alerts:', error);
+            showAlert('Error generating alerts', 'danger');
+        }
+    }
+    
+    function viewAlertDetails(alertId) {
+        window.location.href = `/admin/analytics?alert_id=${alertId}`;
+    }
+</script>
+{% endblock %}

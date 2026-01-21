@@ -1,0 +1,235 @@
+<!-- templates/forms/covid19_form.html -->
+{% extends "base.html" %}
+
+{% block title %}COVID-19 Report Form - DODS{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem; color: #667eea;">🦠 COVID-19 Disease Report</h1>
+
+<div class="card">
+    <form id="covid19Form">
+        <input type="hidden" name="disease_type" value="COVID19">
+        
+        <h3 style="color: #667eea; margin-bottom: 1rem;">Basic Information</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <div class="form-group">
+                <label for="diagnosis_date">Diagnosis Date *</label>
+                <input type="date" id="diagnosis_date" name="diagnosis_date" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="severity">Severity *</label>
+                <select id="severity" name="severity" required>
+                    <option value="">Select Severity</option>
+                    <option value="Mild">Mild (Asymptomatic/Minor symptoms)</option>
+                    <option value="Moderate">Moderate (Fever, Cough)</option>
+                    <option value="Severe">Severe (Difficulty breathing)</option>
+                    <option value="Critical">Critical (ICU/Ventilator)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="status">Status *</label>
+                <select id="status" name="status" required>
+                    <option value="Active">Active</option>
+                    <option value="Recovered">Recovered</option>
+                    <option value="Deceased">Deceased</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="vaccination_status">Vaccination Status</label>
+                <select id="vaccination_status" name="vaccination_status">
+                    <option value="Unvaccinated">Unvaccinated</option>
+                    <option value="Partially Vaccinated">Partially Vaccinated (1 dose)</option>
+                    <option value="Fully Vaccinated">Fully Vaccinated (2 doses)</option>
+                    <option value="Booster">Booster Received</option>
+                </select>
+            </div>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 2rem 0 1rem;">Symptoms</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+            <label><input type="checkbox" name="symptom" value="fever"> Fever</label>
+            <label><input type="checkbox" name="symptom" value="cough"> Dry Cough</label>
+            <label><input type="checkbox" name="symptom" value="fatigue"> Fatigue</label>
+            <label><input type="checkbox" name="symptom" value="breathing"> Difficulty Breathing</label>
+            <label><input type="checkbox" name="symptom" value="taste_loss"> Loss of Taste/Smell</label>
+            <label><input type="checkbox" name="symptom" value="throat"> Sore Throat</label>
+            <label><input type="checkbox" name="symptom" value="headache"> Headache</label>
+            <label><input type="checkbox" name="symptom" value="body_ache"> Body Ache</label>
+            <label><input type="checkbox" name="symptom" value="diarrhea"> Diarrhea</label>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 2rem 0 1rem;">Test Results</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <div class="form-group">
+                <label for="test_type">Test Type *</label>
+                <select id="test_type" name="test_type" required>
+                    <option value="RT-PCR">RT-PCR</option>
+                    <option value="Rapid Antigen">Rapid Antigen</option>
+                    <option value="Antibody">Antibody Test</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="test_result">Test Result *</label>
+                <select id="test_result" name="test_result" required>
+                    <option value="Positive">Positive</option>
+                    <option value="Negative">Negative</option>
+                    <option value="Inconclusive">Inconclusive</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="ct_value">CT Value (if PCR)</label>
+                <input type="number" id="ct_value" name="ct_value" step="0.1">
+            </div>
+            
+            <div class="form-group">
+                <label for="oxygen_saturation">Oxygen Saturation (SpO2)</label>
+                <input type="number" id="oxygen_saturation" name="oxygen_saturation" min="0" max="100" placeholder="95">
+            </div>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 2rem 0 1rem;">Epidemiological Data</h3>
+        
+        <div class="form-group">
+            <label for="travel_history">Travel History (Last 14 days)</label>
+            <textarea id="travel_history" name="travel_history" rows="3" placeholder="List places visited"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="contact_history">Contact History</label>
+            <textarea id="contact_history" name="contact_history" rows="3" placeholder="Contact with confirmed cases"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>Comorbidities</label>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                <label><input type="checkbox" name="comorbidity" value="diabetes"> Diabetes</label>
+                <label><input type="checkbox" name="comorbidity" value="hypertension"> Hypertension</label>
+                <label><input type="checkbox" name="comorbidity" value="cardiac"> Cardiac Disease</label>
+                <label><input type="checkbox" name="comorbidity" value="respiratory"> Respiratory Disease</label>
+                <label><input type="checkbox" name="comorbidity" value="kidney"> Kidney Disease</label>
+                <label><input type="checkbox" name="comorbidity" value="cancer"> Cancer</label>
+            </div>
+        </div>
+        
+        <h3 style="color: #667eea; margin: 2rem 0 1rem;">Treatment</h3>
+        
+        <div class="form-group">
+            <label for="treatment_type">Treatment Type</label>
+            <select id="treatment_type" name="treatment_type">
+                <option value="Home Isolation">Home Isolation</option>
+                <option value="Hospital Admission">Hospital Admission</option>
+                <option value="ICU">ICU</option>
+                <option value="Ventilator">Ventilator Support</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="medications">Medications Prescribed</label>
+            <textarea id="medications" name="medications" rows="3"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="notes">Additional Notes</label>
+            <textarea id="notes" name="notes" rows="4"></textarea>
+        </div>
+        
+        <div style="margin-top: 2rem;">
+            <button type="submit" class="btn btn-primary">Submit Report</button>
+            <button type="button" class="btn btn-danger" onclick="history.back()">Cancel</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Set today's date as default
+    document.getElementById('diagnosis_date').valueAsDate = new Date();
+    
+    document.getElementById('covid19Form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Get patient ID from URL
+        const patientId = window.location.pathname.split('/').pop();
+        
+        // Collect form data
+        const symptoms = Array.from(document.querySelectorAll('input[name="symptom"]:checked'))
+            .map(cb => cb.value);
+        
+        const comorbidities = Array.from(document.querySelectorAll('input[name="comorbidity"]:checked'))
+            .map(cb => cb.value);
+        
+        const formData = {
+            disease_type: 'COVID19',
+            diagnosis_date: document.getElementById('diagnosis_date').value,
+            severity: document.getElementById('severity').value,
+            status: document.getElementById('status').value,
+            vaccination_status: document.getElementById('vaccination_status').value,
+            symptoms: {
+                list: symptoms,
+                comorbidities: comorbidities
+            },
+            test_results: {
+                test_type: document.getElementById('test_type').value,
+                result: document.getElementById('test_result').value,
+                ct_value: document.getElementById('ct_value').value || null,
+                oxygen_saturation: document.getElementById('oxygen_saturation').value || null
+            },
+            travel_history: {
+                details: document.getElementById('travel_history').value
+            },
+            contact_history: {
+                details: document.getElementById('contact_history').value
+            },
+            treatment: {
+                type: document.getElementById('treatment_type').value,
+                medications: document.getElementById('medications').value
+            },
+            notes: document.getElementById('notes').value
+        };
+        
+        try {
+            const response = await fetch(`/user/add-disease-record/${patientId}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(formData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert('COVID-19 report submitted successfully!', 'success');
+                
+                // Show risk prediction
+                const pred = result.risk_prediction;
+                const riskMsg = `
+                    Risk Assessment:
+                    - Alert Level: ${pred.alert_level}
+                    - Outbreak Probability: ${(pred.probability * 100).toFixed(1)}%
+                    - Predicted Cases: ${pred.predicted_cases}
+                    - R0: ${pred.r0}
+                `;
+                
+                alert(riskMsg);
+                
+                setTimeout(() => {
+                    window.location.href = '/user/dashboard';
+                }, 2000);
+            } else {
+                showAlert('Error submitting report', 'danger');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error submitting report', 'danger');
+        }
+    });
+</script>
+{% endblock %}
