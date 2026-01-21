@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pandas
+numpy
+scipy
+fastdtw
+statsmodels
+sqlalchemy
+matplotlib
+black
+isort
