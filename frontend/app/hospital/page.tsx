@@ -119,6 +119,7 @@ export default function HospitalPortal() {
     }, [searchQuery])
 
     const [showKey, setShowKey] = useState(false)
+    const [apiKey, setApiKey] = useState('')
 
     // Use environment variable for API URL, defaulting to localhost:8000
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';

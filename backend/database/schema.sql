@@ -50,8 +50,7 @@ CREATE TABLE IF NOT EXISTS fact_daily_visits (
 );
 
 -- Indexes for performance
-CREATE INDEX IF NOT EXISTS idx_patients_hospital_date ON patients(hospital_id, admission_date);
-CREATE INDEX IF NOT EXISTS idx_patients_flu ON patients(is_flu_positive);
+
 
 
 -- Users Table for Authentication (Updated with hospital_id)
@@ -120,5 +119,9 @@ CREATE TABLE IF NOT EXISTS api_keys (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(hospital_id) REFERENCES dim_hospital(hospital_id)
 );
+
+-- Indexes for performance (Moved to end to ensure tables exist)
+CREATE INDEX IF NOT EXISTS idx_patients_hospital_date ON patients(hospital_id, admission_date);
+CREATE INDEX IF NOT EXISTS idx_patients_flu ON patients(is_flu_positive);
 
 

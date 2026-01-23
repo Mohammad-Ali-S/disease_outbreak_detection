@@ -45,7 +45,7 @@ def main():
     try:
         # 1. Main Backend (Port 8000) - Run from backend dir to fix imports
         backend = run_process(
-            [sys.executable, "-m", "uvicorn", "main:app", "--port", "8000", "--reload"],
+            [sys.executable, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"],
             cwd=os.path.join(os.getcwd(), "backend")
         )
         processes.append(("Backend", backend))
