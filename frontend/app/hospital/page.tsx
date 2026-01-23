@@ -118,10 +118,9 @@ export default function HospitalPortal() {
         return () => clearTimeout(timer)
     }, [searchQuery])
 
-    // API Key State
-    const [apiKey, setApiKey] = useState<string | null>(null)
     const [showKey, setShowKey] = useState(false)
 
+    // Use environment variable for API URL, defaulting to localhost:8000
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
     useEffect(() => {
@@ -137,11 +136,11 @@ export default function HospitalPortal() {
         fetchProfile(t)
         fetchKey(t)
 
-        // Poll for new admissions every 2 seconds
+        // Poll for new admissions every 30 seconds
         const interval = setInterval(() => {
             fetchData(t)
             checkAlerts(t)
-        }, 2000)
+        }, 30000)
 
         return () => clearInterval(interval)
     }, [router, API_URL])
@@ -357,10 +356,25 @@ export default function HospitalPortal() {
 
     const handleDelete = async (id: number) => {
         if (!confirm("Delete this record?")) return
+        console.log(`[DELETE] Attempting to delete patient ${id} at ${API_URL}/api/patients/${id}`)
         try {
-            const res = await fetch(`${API_URL}/api/patients/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } })
-            if (res.ok) setEntries(entries.filter(e => e.patient_id !== id))
-        } catch (e) { console.error(e) }
+            const res = await fetch(`${API_URL}/api/patients/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            console.log(`[DELETE] Response status: ${res.status}`)
+
+            if (res.ok) {
+                setEntries(entries.filter(e => e.patient_id !== id))
+            } else {
+                const text = await res.text()
+                console.error(`[DELETE] Failed: ${text}`)
+                alert(`Delete failed (Status: ${res.status}): ${text}`)
+            }
+        } catch (e: any) {
+            console.error("[DELETE] Network Error:", e)
+            alert(`Network Error during delete: ${e.message}\nCheck console for details.`)
+        }
     }
 
     const handleDischarge = async (id: number) => {

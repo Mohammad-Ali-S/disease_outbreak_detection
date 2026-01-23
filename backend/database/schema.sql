@@ -50,6 +50,8 @@ CREATE TABLE IF NOT EXISTS fact_daily_visits (
 );
 
 -- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_patients_hospital_date ON patients(hospital_id, admission_date);
+CREATE INDEX IF NOT EXISTS idx_patients_flu ON patients(is_flu_positive);
 
 
 -- Users Table for Authentication (Updated with hospital_id)

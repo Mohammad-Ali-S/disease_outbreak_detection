@@ -380,6 +380,37 @@ class HospitalProfile(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
 
+
+def ensure_hospital_link(username, hospital_id, conn):
+    """
+    Ensures a user is linked to a valid hospital.
+    Auto-creates hospital and proper link if missing.
+    Returns: Valid hospital_id
+    """
+    # 1. If hospital_id is present, check if valid
+    if hospital_id:
+        exists = conn.execute("SELECT 1 FROM dim_hospital WHERE hospital_id = ?", (hospital_id,)).fetchone()
+        if exists:
+            return hospital_id
+    
+    # 2. If missing or invalid, create new
+    import secrets
+    new_hid = f"H_AUTO_{secrets.token_hex(4).upper()}"
+    hospital_name = f"{username.capitalize()} Hospital"
+    
+    # Create Hospital (Default values)
+    conn.execute("""
+        INSERT INTO dim_hospital (hospital_id, name, city, region, latitude, longitude)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (new_hid, hospital_name, "Unknown City", "Unknown Region", 0.0, 0.0))
+    
+    # Link User
+    conn.execute("UPDATE users SET hospital_id = ? WHERE username = ?", (new_hid, username))
+    conn.commit()
+    
+    print(f"Auto-provisioned hospital {new_hid} for user {username}")
+    return new_hid
+
 @app.get("/api/hospital/profile")
 def get_hospital_profile(user=Depends(get_current_user)):
     conn = get_db_connection()
@@ -387,13 +418,16 @@ def get_hospital_profile(user=Depends(get_current_user)):
         # Resolve user to hospital
         cur = conn.execute("SELECT hospital_id FROM users WHERE username = ?", (user['sub'],))
         row = cur.fetchone()
-        hospital_pk = row['hospital_id'] if row and row['hospital_id'] else None
         
-        if not hospital_pk:
-             return {}
+        # AUTO-PROVISIONING: Ensure link exists
+        current_hid = row['hospital_id'] if row else None
+        hospital_pk = ensure_hospital_link(user['sub'], current_hid, conn)
              
         profile = conn.execute("SELECT * FROM dim_hospital WHERE hospital_id = ?", (hospital_pk,)).fetchone()
         return dict(profile) if profile else {}
+    except Exception as e:
+        print(f"Profile Fetch Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch profile")
     finally:
         conn.close()
 
@@ -404,10 +438,10 @@ def update_hospital_profile(profile: HospitalProfile, user=Depends(get_current_u
         # Resolve user to hospital
         cur = conn.execute("SELECT hospital_id FROM users WHERE username = ?", (user['sub'],))
         row = cur.fetchone()
-        hospital_pk = row['hospital_id'] if row and row['hospital_id'] else None
         
-        if not hospital_pk:
-            raise HTTPException(status_code=400, detail="User not linked to a hospital")
+        # AUTO-PROVISIONING: Ensure link exists before update
+        current_hid = row['hospital_id'] if row else None
+        hospital_pk = ensure_hospital_link(user['sub'], current_hid, conn)
 
         # Update
         # Build dynamic query based on provided fields
@@ -739,6 +773,16 @@ def run_simulation(metric: str = 'spatial', threshold: float = 0.05, role: str =
 # Static Files Mount moved to end
 
 
+
+# --- Caching Defaults ---
+# Simple in-memory cache for mining results. 
+# Key: 'mining_result', Value: { 'data': ..., 'timestamp': ... }
+MINING_CACHE = {
+    'last_run': 0,
+    'data': None,
+    'ttl': 300 # 5 minutes
+}
+
 @app.get("/api/hospital/alerts")
 def get_alerts(role: str = Depends(require_admin), user=Depends(get_current_user)):
     conn = get_db_connection()
@@ -751,36 +795,47 @@ def get_alerts(role: str = Depends(require_admin), user=Depends(get_current_user
         if not hid:
             return {"alert": False, "message": "No hospital assigned."}
 
-        # 2. Get Data for Mining (Same as dashboard)
-        query = """
-        SELECT 
-            hospital_id as hospital_key, 
-            admission_date as date_key, 
-            SUM(CASE WHEN is_flu_positive THEN 1 ELSE 0 END) as flu_positive_count
-        FROM patients
-        GROUP BY hospital_id, admission_date
-        """
-        visits_df = pd.read_sql(query, conn)
+        # 2. Check Cache
+        import time
+        current_time = time.time()
         
-        if visits_df.empty:
-             return {"alert": False}
+        # If cache is fresh, use it to find MY cluster
+        if MINING_CACHE['data'] and (current_time - MINING_CACHE['last_run'] < MINING_CACHE['ttl']):
+            # print("Using Cached Mining Results")
+            clusters = MINING_CACHE['data']
+        else:
+            # print("Running Fresh Mining...")
+            # 3. Get Data for Mining (Same as dashboard)
+            query = """
+            SELECT 
+                hospital_id as hospital_key, 
+                admission_date as date_key, 
+                SUM(CASE WHEN is_flu_positive THEN 1 ELSE 0 END) as flu_positive_count
+            FROM patients
+            GROUP BY hospital_id, admission_date
+            """
+            visits_df = pd.read_sql(query, conn)
+            
+            if visits_df.empty:
+                return {"alert": False}
 
-        visits_df['date_key'] = pd.to_datetime(visits_df['date_key'])
-        hospitals_df = pd.read_sql("SELECT * FROM dim_hospital", conn)
-        # Ensure we use hospital_id as key
-        hospitals_df = hospitals_df.rename(columns={'hospital_id': 'hospital_key'}) 
+            visits_df['date_key'] = pd.to_datetime(visits_df['date_key'])
+            hospitals_df = pd.read_sql("SELECT * FROM dim_hospital", conn)
+            # Ensure we use hospital_id as key
+            hospitals_df = hospitals_df.rename(columns={'hospital_id': 'hospital_key'}) 
 
-        # 3. Run Miner
-        miner = OutbreakMiner(hospitals_df, visits_df)
-        dist_matrix = miner.compute_distance_matrix(metric='spatial') # Using spatial for consistency
-        clusters = miner.perform_clustering(dist_matrix, threshold=0.05)
+            # 4. Run Miner
+            miner = OutbreakMiner(hospitals_df, visits_df)
+            dist_matrix = miner.compute_distance_matrix(metric='spatial') # Using spatial for consistency
+            clusters = miner.perform_clustering(dist_matrix, threshold=0.05)
+            
+            # Update Cache
+            MINING_CACHE['data'] = clusters
+            MINING_CACHE['last_run'] = current_time
 
-        # 4. Find My Cluster
+        # 5. Find My Cluster
         my_cluster_id = None
         for cid, members in clusters.items():
-            # Mining engine uses whatever type is in DB. SQLite might be string "H001", but miner maps to index?
-            # Wait, miner uses hospital_key from DF.
-            # let's check members content.
             if hid in members:
                 my_cluster_id = cid
                 break
@@ -788,13 +843,26 @@ def get_alerts(role: str = Depends(require_admin), user=Depends(get_current_user
         if my_cluster_id is None:
              return {"alert": False, "message": "Not in any cluster"}
 
-        # 5. Check Risk Level
-        # Calculate recent cases for this cluster
+        # 6. Check Risk Level (Optimization: We need connection for this part if not cached, 
+        # but 'clusters' only gives IDs. We need case counts.
+        # Ideally we should cache the risk assessment too, but for now caching the heavy clustering is enough.)
+        
+        # Quick check of recent cases for THIS cluster
+        # This is fast enough to do on the fly usually.
+        
+        # To avoid re-querying DF, let's just do a specific SQL for the cluster members
         members = clusters[my_cluster_id]
-        recent_cases = visits_df[
-            (visits_df['hospital_key'].isin(members)) & 
-            (visits_df['date_key'] >= pd.Timestamp('now') - pd.Timedelta(days=7))
-        ]['flu_positive_count'].sum()
+        if not members: return {"alert": False}
+        
+        placeholders = ','.join(['?'] * len(members))
+        query = f"""
+            SELECT COUNT(*) 
+            FROM patients 
+            WHERE hospital_id IN ({placeholders})
+            AND is_flu_positive = 1
+            AND admission_date >= date('now', '-7 days')
+        """
+        recent_cases = conn.execute(query, tuple(members)).fetchone()[0]
 
         if recent_cases > 5:
             return {
@@ -812,152 +880,13 @@ def get_alerts(role: str = Depends(require_admin), user=Depends(get_current_user
     finally:
         conn.close()
 
-# --- Phase 2: Smart Alerts API ---
-from mining.alert_engine import AlertEngine
+# ... (omitted)
 
-@app.get("/api/alerts/active")
-def get_active_alerts():
-    conn = get_db_connection()
-    try:
-        engine = AlertEngine(conn)
-        alerts = engine.run_checks() # Run checks and get fresh alerts
-        
-        # Get all unread alerts from DB
-        # For public view, we might want system-wide alerts.
-        # For admin, specific hospital.
-        # Let's return all CRITICAL/WARNING for public ticker
-        
-        rows = conn.execute("SELECT * FROM alerts WHERE created_at >= date('now', '-1 day') ORDER BY created_at DESC LIMIT 10").fetchall()
-        return [dict(row) for row in rows]
-    finally:
-        conn.close()
+from functools import lru_cache
 
-# --- Phase 3: Citizen Reporting & Integrity ---
-from mining.integrity_engine import IntegrityEngine
-from pydantic import BaseModel
-
-class ReportRequest(BaseModel):
-    latitude: float
-    longitude: float
-    symptoms: str # Comma separated
-    
-@app.post("/api/public/report")
-def submit_report(report: ReportRequest, request: Request, background_tasks: BackgroundTasks):
-    client_ip = request.client.host
-    conn = get_db_connection()
-    try:
-        engine = IntegrityEngine(conn)
-        
-        # Validate
-        is_valid, trust_score, reason = engine.validate_report(report.dict(), client_ip)
-        
-        if not is_valid:
-            print(f"Rejected Report: {reason}")
-            raise HTTPException(status_code=429, detail=reason)
-            
-        # Insert
-        ip_hash = hashlib.sha256(client_ip.encode()).hexdigest()
-        conn.execute("""
-            INSERT INTO community_reports (latitude, longitude, symptoms, trust_score, ip_hash)
-            VALUES (?, ?, ?, ?, ?)
-        """, (report.latitude, report.longitude, report.symptoms, trust_score, ip_hash))
-        conn.commit()
-        
-        return {"status": "success", "trust_score": trust_score}
-    except Exception as e:
-        print(f"Report Error: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
-    finally:
-        conn.close()
-
-@app.get("/api/public/reports")
-def get_community_reports():
-    conn = get_db_connection()
-    try:
-        # Only return reports from last 48 hours to keep map clean
-        reports = conn.execute("""
-            SELECT latitude, longitude, symptoms, trust_score 
-            FROM community_reports 
-            WHERE created_at >= date('now', '-2 days')
-            AND trust_score > 0
-        """).fetchall()
-        return [dict(row) for row in reports]
-    finally:
-        conn.close()
-
-# --- Phase 4: Predictive Simulator ---
-from mining.simulation_engine import SimulationEngine
-
-class SimulationRequest(BaseModel):
-    mask_compliance: float = 0.0 # 0.0 to 1.0
-    lockdown_level: float = 0.0 # 0.0 to 1.0
-    
-@app.post("/api/simulation/predict")
-def run_simulation_projection(params: SimulationRequest):
-    conn = get_db_connection()
-    try:
-        # Get Current State
-        # Total Patients, but really we want active infected.
-        # Let's approximate from patients table (last 14 days)
-        active_infected = conn.execute("SELECT COUNT(*) FROM patients WHERE is_flu_positive = 1 AND admission_date >= date('now', '-14 days')").fetchone()[0]
-        active_infected = max(1, active_infected) # Avoid 0 for math stability
-        
-        # Assume total population of our region (e.g., covered area)
-        # 30 hospitals * ~50k catchment = 1.5M
-        population = 1500000 
-        
-        # Estimate Recovered
-        total_cases = conn.execute("SELECT COUNT(*) FROM patients WHERE is_flu_positive = 1").fetchone()[0]
-        recovered = max(0, total_cases - active_infected)
-        
-        engine = SimulationEngine(active_infected, recovered, population)
-        
-        # Calculate aggregate intervention factor
-        # Mask = 0.4 max impact, Lockdown = 0.6 max impact
-        # Naive linear combination
-        impact = (params.mask_compliance * 0.4) + (params.lockdown_level * 0.6)
-        
-        # 1. Baseline (Do Nothing)
-        baseline = engine.run_sir_projection(days=30, intervention_factor=0.0)
-        
-        # 2. Intervention
-        projected = engine.run_sir_projection(days=30, intervention_factor=impact)
-        
-        return {
-            "baseline": baseline,
-            "projected": projected,
-            "impact_score": round(impact * 100, 1) # % transmission reduction
-        }
-    finally:
-        conn.close()
-
-# --- Phase 5: ERP Integration ---
-from integrations.erp_integration import ERPIntegration
-
-class IntegrationPayload(BaseModel):
-    api_key: str
-    event_type: str
-    data: dict
-
-@app.post("/api/v1/connect/admission")
-def ingest_erp_event(payload: IntegrationPayload):
-    integrator = ERPIntegration(db_path=DB_PATH)
-    hospital_id = integrator.validate_api_key(payload.api_key)
-    
-    if not hospital_id:
-        return {"status": "error", "message": "Invalid API Key"}, 401
-        
-    success = integrator.process_admission_event(hospital_id, payload.data)
-    
-    if success:
-        return {"status": "success", "message": "Event Ingested"}
-    else:
-        return {"status": "error", "message": "Processing Failed"}, 500
-
-@app.get("/api/hospital/search")
-def search_nominatim(q: str):
+@lru_cache(maxsize=100)
+def cached_search_request(q):
     import requests
-    # Use a proper User-Agent to respect Nominatim's usage policy
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Referer': 'http://localhost:3000/'
@@ -969,18 +898,27 @@ def search_nominatim(q: str):
         'addressdetails': 1,
         'limit': 5
     }
+    resp = requests.get(url, params=params, headers=headers)
+    resp.raise_for_status()
+    return resp.json()
+
+@app.get("/api/hospital/search")
+def search_nominatim(q: str):
     try:
-        resp = requests.get(url, params=params, headers=headers)
-        resp.raise_for_status()
-        return resp.json()
+        return cached_search_request(q)
     except Exception as e:
         print(f"Nominatim Error: {e}")
         raise HTTPException(status_code=500, detail="Search failed")
 
 # --- Static Files (Must be last) ---
-app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
+# --- Static Files (Must be last) ---
+if os.path.exists(STATIC_DIR):
+    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
+else:
+    print(f"WARNING: Static directory '{STATIC_DIR}' not found. Frontend serving disabled (Development Mode).")
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
